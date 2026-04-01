@@ -23,24 +23,24 @@ jobs:
       # ============================
       # BACKEND
       # # ============================
-      # - name: Install backend dependencies
-      # #   # working-directory: ./cinephoria-backend
-        # run: npm install
+#       - name: Install backend dependencies
+#         working-directory: ./cinephoria-backend
+#         run: npm install
+# # 
+#       - name: Run backend tests
+#         working-directory: ./cinephoria-backend
+#         run: npm test || echo "No tests"
 
-      # # - name: Run backend tests
-      #  # working-directory: ./cinephoria-backend
-      #   run: npm test || echo "No tests"
+#       # # ============================
+#       # # FRONTEND ANGULAR
+#       # # ============================
+#       - name: Install frontend dependencies
+#         working-directory: ./cinephoria-frontend
+#         run: npm install
 
-      # # ============================
-      # # FRONTEND ANGULAR
-      # # ============================
-      # - name: Install frontend dependencies
-      # #   # working-directory: ./cinephoria-frontend
-      #   run: npm install
-
-      # - name: Build Angular app
-      # #   # working-directory: ./cinephoria-frontend
-      #   run: npm run build
+#       - name: Build Angular app
+#       #   # working-directory: ./cinephoria-frontend
+#         run: npm run build
 
       # ============================
       # DOCKER CHECK
