@@ -1,0 +1,7 @@
+# cinephoria-orchestration/.gitignore
+.env
+.env.dev
+.env.prod
+.env.local
+*.log
+.DS_Store

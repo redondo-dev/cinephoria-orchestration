@@ -1,0 +1,75 @@
+# cinephoria-orchestration/docker-compose.prod.yml
+version: '3.9'
+
+services:
+  # Backend API
+  backend:
+    image: ${DOCKER_REGISTRY}/cinephoria-backend:${VERSION:-latest}
+    container_name: cinephoria-backend-prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL}  # URL Render PostgreSQL
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGIN: ${FRONTEND_URL}
+    ports:
+      - "3000:3000"
+    networks:
+      - cinephoria-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # Frontend Web
+  web:
+    image: ${DOCKER_REGISTRY}/cinephoria-web:${VERSION:-latest}
+    container_name: cinephoria-web-prod
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      - cinephoria-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # NGINX Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: cinephoria-nginx-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro  # Certificats SSL
+    depends_on:
+      - backend
+      - web
+    networks:
+      - cinephoria-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  cinephoria-network:
+    driver: bridge
+
+# Pas de volume PostgreSQL car hébergé sur Render
