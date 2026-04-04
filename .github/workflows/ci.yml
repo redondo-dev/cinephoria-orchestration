@@ -49,7 +49,14 @@ jobs:
         run: docker compose -f docker-compose.prod.yml config
 
       # ============================
-      # BUILD DOCKER IMAGES (optionnel)
+      # BUILD DOCKER IMAGES 
       # ============================
       - name: Build Docker images
         run: docker compose -f docker-compose.prod.yml build
+
+      # ============================
+      # DEPLOY RENDER
+      # ============================
+      - name: Deploy to Render
+        run: |
+          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
