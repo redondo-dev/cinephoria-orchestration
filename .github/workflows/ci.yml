@@ -2,7 +2,7 @@ name: CI Cinephoria
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
 
 jobs:
@@ -23,24 +23,24 @@ jobs:
       # ============================
       # BACKEND
       # # ============================
-#       - name: Install backend dependencies
-#         working-directory: ./cinephoria-backend
-#         run: npm install
-# # 
-#       - name: Run backend tests
-#         working-directory: ./cinephoria-backend
-#         run: npm test || echo "No tests"
+      #       - name: Install backend dependencies
+      #         working-directory: ./cinephoria-backend
+      #         run: npm install
+      # #
+      #       - name: Run backend tests
+      #         working-directory: ./cinephoria-backend
+      #         run: npm test || echo "No tests"
 
-#       # # ============================
-#       # # FRONTEND ANGULAR
-#       # # ============================
-#       - name: Install frontend dependencies
-#         working-directory: ./cinephoria-frontend
-#         run: npm install
+      #       # # ============================
+      #       # # FRONTEND ANGULAR
+      #       # # ============================
+      #       - name: Install frontend dependencies
+      #         working-directory: ./cinephoria-frontend
+      #         run: npm install
 
-#       - name: Build Angular app
-#       #   # working-directory: ./cinephoria-frontend
-#         run: npm run build
+      #       - name: Build Angular app
+      #       #   # working-directory: ./cinephoria-frontend
+      #         run: npm run build
 
       # ============================
       # DOCKER CHECK
@@ -49,7 +49,7 @@ jobs:
         run: docker compose -f docker-compose.prod.yml config
 
       # ============================
-      # BUILD DOCKER IMAGES 
+      # BUILD DOCKER IMAGES (optionnel)
       # ============================
       - name: Build Docker images
         run: docker compose -f docker-compose.prod.yml build
@@ -59,4 +59,11 @@ jobs:
       # ============================
       - name: Deploy to Render
         run: |
-          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+          curl -s --fail -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" \
+            -o response.json \
+            -w "\nHTTP Status: %{http_code}\n"
+          echo "=== Render Response ==="
+          cat response.json
+
+      - name: Confirm deploy triggered
+        run: echo "✅ Deploy déclenché sur Render avec succès !"
