@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "fix(deps)"
+    groups:
+      ionic-capacitor:
+        patterns:
+          - "@ionic/*"
+          - "@capacitor/*"
+
+  # A activer seulement si le dossier android/ existe avec un build.gradle
+  # - package-ecosystem: "gradle"
+  #   directory: "/android"
+  #   schedule:
+  #     interval: "weekly"

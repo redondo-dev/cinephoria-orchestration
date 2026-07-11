@@ -1,0 +1,71 @@
+name: CI Mobile
+
+on:
+  push:
+    branches: ["main", "dev"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Installer les dependances
+        run: npm ci
+
+      # --- Audit de securite des dependances ---
+      - name: Audit npm (dependances vulnerables)
+        run: npm audit --audit-level=high
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Build web (Ionic)
+        run: npx ionic build --prod
+
+  build-android-apk:
+    # Job separe : compile un APK de debug signe automatiquement,
+    # a activer une fois la config Android/Capacitor stabilisee.
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Installer Java (requis pour Gradle/Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Installer les dependances et builder le web
+        run: |
+          npm ci
+          npx ionic build --prod
+          npx cap sync android
+
+      - name: Builder l'APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Publier l'APK comme artefact du workflow
+        uses: actions/upload-artifact@v4
+        with:
+          name: cinephoria-mobile-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
