@@ -1,21 +1,97 @@
 # cinephoria-orchestration/docker-compose.dev.yml
-version: '3.9'
+#
+# Environnement de developpement local reproductible.
+# Lance : docker compose -f docker-compose.dev.yml up --build
+#
+# Structure attendue sur la machine (repos freres, au meme niveau) :
+#   cinephoria-backend/backend/    (Dockerfile.dev a la racine de ce sous-dossier)
+#   cinephoria-frontend/           (dockerfile.dev a la racine)
+#   cinephoria-orchestration/      (ce fichier)
 
 services:
+  postgres:
+    image: postgres:15
+    container_name: cinephoria-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cinephoria_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - cinephoria-dev-network
+
   backend:
     build:
-      context: ../cinephoria-backend  # Chemin relatif
+      context: ../cinephoria-backend/backend
       dockerfile: Dockerfile.dev
+    container_name: cinephoria-backend-dev
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: cinephoria_dev
+      JWT_SECRET: dev_jwt_secret_local_uniquement
+      DISABLE_CAPTCHA: "true"
+      # Variables optionnelles a completer localement si besoin (email, Stripe, Mongo) :
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      # MONGO_URI: ${MONGO_URI:-}
+      # SMTP_HOST: ${SMTP_HOST:-}
+    ports:
+      - "3000:3000"
     volumes:
-      - ../cinephoria-backend:/app
+      - ../cinephoria-backend/backend:/app
       - /app/node_modules
-    # ...
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - cinephoria-dev-network
 
-  web:
+  frontend:
     build:
-      context: ../cinephoria-web
-      dockerfile: Dockerfile.dev
+      context: ../cinephoria-frontend
+      dockerfile: dockerfile.dev
+    container_name: cinephoria-frontend-dev
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+    ports:
+      - "4200:4200"
     volumes:
-      - ../cinephoria-web:/app
+      - ../cinephoria-frontend:/app
       - /app/node_modules
-    # ...
+    networks:
+      - cinephoria-dev-network
+
+networks:
+  cinephoria-dev-network:
+    driver: bridge
+
+volumes:
+  postgres-dev-data:
