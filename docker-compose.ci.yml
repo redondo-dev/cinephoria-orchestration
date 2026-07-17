@@ -1,0 +1,78 @@
+# cinephoria-orchestration/docker-compose.ci.yml
+#
+# Utilise uniquement en CI (GitHub Actions) pour les tests d'integration.
+# Contrairement a docker-compose.dev.yml, ce fichier :
+#   - utilise les Dockerfiles de production (build complet, code copie dans l'image)
+#   - ne monte aucun volume (le runner CI clone les repos a un autre endroit que le local)
+#   - expose les memes ports que dev pour que les tests curl/Cypress fonctionnent pareil
+#
+# Lance : docker compose -f docker-compose.ci.yml up --build -d
+
+services:
+
+  postgres:
+    image: postgres:15
+    container_name: cinephoria-postgres-ci
+    environment:
+      POSTGRES_DB: cinephoria_ci
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - cinephoria-ci-network
+
+  backend:
+    build:
+      context: ../cinephoria-backend/backend
+      dockerfile: Dockerfile
+    container_name: cinephoria-backend-ci
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: test
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: cinephoria_ci
+      JWT_SECRET: ci_jwt_secret_ephemere
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - cinephoria-ci-network
+
+  frontend:
+    build:
+      context: ../cinephoria-frontend
+      dockerfile: dockerfile
+    container_name: cinephoria-frontend-ci
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - cinephoria-ci-network
+
+networks:
+  cinephoria-ci-network:
+    driver: bridge
