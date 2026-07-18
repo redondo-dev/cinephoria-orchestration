@@ -1,69 +1,70 @@
-name: CI Cinephoria
+name: CI Orchestration - Tests d'integration
 
 on:
   push:
     branches: ["main"]
   pull_request:
+    branches: ["main"]
+  workflow_dispatch:
 
 jobs:
-  build-and-test:
+  integration-test:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Récupérer le code
-      - name: Checkout repository
+      # Checkout des 3 repos, disposes cote a cote comme en local
+      # (docker-compose.ci.yml reference ../cinephoria-backend et ../cinephoria-frontend)
+      - name: Checkout orchestration
         uses: actions/checkout@v4
-
-      # 2. Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          path: cinephoria-orchestration
 
-      # ============================
-      # BACKEND
-      # # ============================
-      #       - name: Install backend dependencies
-      #         working-directory: ./cinephoria-backend
-      #         run: npm install
-      # #
-      #       - name: Run backend tests
-      #         working-directory: ./cinephoria-backend
-      #         run: npm test || echo "No tests"
+      - name: Checkout backend
+        uses: actions/checkout@v4
+        with:
+          repository: redondo-dev/cinephoria-backend
+          ref: main
+          path: cinephoria-backend
 
-      #       # # ============================
-      #       # # FRONTEND ANGULAR
-      #       # # ============================
-      #       - name: Install frontend dependencies
-      #         working-directory: ./cinephoria-frontend
-      #         run: npm install
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          repository: redondo-dev/cinephoria-frontend
+          ref: main
+          path: cinephoria-frontend
 
-      #       - name: Build Angular app
-      #       #   # working-directory: ./cinephoria-frontend
-      #         run: npm run build
-
-      # ============================
-      # DOCKER CHECK
-      # ============================
-      - name: Check Docker Compose
-        run: docker compose -f docker-compose.prod.yml config
-
-      # ============================
-      # BUILD DOCKER IMAGES (optionnel)
-      # ============================
-      - name: Build Docker images
-        run: docker compose -f docker-compose.prod.yml build
-
-      # ============================
-      # DEPLOY RENDER
-      # ============================
-      - name: Deploy to Render
+      - name: Verifier l'arborescence
         run: |
-          curl -s --fail -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" \
-            -o response.json \
-            -w "\nHTTP Status: %{http_code}\n"
-          echo "=== Render Response ==="
-          cat response.json
+          ls -la
+          ls -la cinephoria-backend/backend
+          ls -la cinephoria-frontend
 
-      - name: Confirm deploy triggered
-        run: echo "✅ Deploy déclenché sur Render avec succès !"
+      - name: Build et demarrage des services
+        working-directory: cinephoria-orchestration
+        run: docker compose -f docker-compose.ci.yml up --build -d
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+
+      - name: Attendre que le backend soit pret
+        run: npx wait-on http://localhost:3000/health --timeout 60000
+
+      - name: Attendre que le frontend soit pret
+        run: npx wait-on http://localhost:8080/health --timeout 60000
+
+      - name: Verifier le backend
+        run: |
+          curl -f http://localhost:3000/health || exit 1
+          curl -f http://localhost:3000/api/films || exit 1
+
+      - name: Verifier le frontend
+        run: curl -f http://localhost:8080/health || exit 1
+
+      - name: Afficher les logs en cas d'echec
+        if: failure()
+        working-directory: cinephoria-orchestration
+        run: docker compose -f docker-compose.ci.yml logs
+
+      - name: Nettoyer
+        if: always()
+        working-directory: cinephoria-orchestration
+        run: docker compose -f docker-compose.ci.yml down -v
