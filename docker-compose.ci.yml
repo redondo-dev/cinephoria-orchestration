@@ -43,6 +43,7 @@ services:
       DB_NAME: cinephoria_ci
       JWT_SECRET: ci_jwt_secret_ephemere
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      HCAPTCHA_SECRET: "0x0000000000000000000000000000000000000000"
     ports:
       - "3000:3000"
     healthcheck:
