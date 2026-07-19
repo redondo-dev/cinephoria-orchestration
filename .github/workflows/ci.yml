@@ -59,9 +59,9 @@ jobs:
         working-directory: cinephoria-frontend
         run: npm ci
 
-      - name: Lancer les tests de securite Cypress contre l'environnement integre
+      - name: Lancer les tests d'integration Cypress (securite + API + contraintes DB) contre l'environnement integre
         working-directory: cinephoria-frontend
-        run: npx cypress run --config baseUrl=http://localhost:8080 --spec "cypress/e2e/securite/**/*.cy.ts"
+        run: npx cypress run --config baseUrl=http://localhost:8080 --spec "cypress/e2e/securite/**/*.cy.ts,cypress/e2e/api/auth.cy.ts,cypress/e2e/api/film.cy.ts,cypress/e2e/api/reservations.cy.ts,cypress/e2e/api/db.constraints.cy.ts"
 
       - name: Verifier le backend
         run: |
