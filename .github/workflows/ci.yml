@@ -97,3 +97,4 @@ jobs:
         if: always()
         working-directory: cinephoria-orchestration
         run: docker compose -f docker-compose.ci.yml down -v
+gitr status
