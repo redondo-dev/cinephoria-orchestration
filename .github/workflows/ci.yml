@@ -49,8 +49,6 @@ jobs:
         working-directory: cinephoria-orchestration
         run: docker compose -f docker-compose.ci.yml ps
 
-
-
       - name: Attendre que le backend soit pret
         run: npx wait-on http://localhost:3000/health --timeout 60000
 
@@ -65,9 +63,9 @@ jobs:
 
       - name: Derniers logs Docker
         if: always()
-             working-directory: cinephoria-orchestration
+        working-directory: cinephoria-orchestration
         run: docker compose -f docker-compose.ci.yml logs --tail=50
-        
+
       - name: Seed des donnees de test dans le conteneur backend
         working-directory: cinephoria-orchestration
         run: docker compose -f docker-compose.ci.yml exec -T backend npm run seed:test
@@ -78,7 +76,7 @@ jobs:
 
       - name: Lancer les tests d'integration Cypress (securite + API + contraintes DB) contre l'environnement integre
         working-directory: cinephoria-frontend
-        run: npx cypress run --config baseUrl=http://localhost:8080 --spec "cypress/e2e/securite/**/*.cy.ts,cypress/e2e/api/auth.cy.ts,cypress/e2e/api/film.cy.ts,cypress/e2e/api/reservations.cy.ts,cypress/e2e/api/db.constraints.cy.ts"
+        run: npx cypress run --env NODE_ENV=development --config baseUrl=http://localhost:8080 --spec "cypress/e2e/securite/**/*.cy.ts,cypress/e2e/api/auth.cy.ts,cypress/e2e/api/film.cy.ts,cypress/e2e/api/reservations.cy.ts,cypress/e2e/api/db.constraints.cy.ts"
 
       - name: Verifier le backend
         run: |
