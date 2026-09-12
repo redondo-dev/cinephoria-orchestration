@@ -64,6 +64,8 @@ services:
     build:
       context: ../cinephoria-frontend
       dockerfile: dockerfile
+      args:
+      BUILD_CONFIG: ci
     container_name: cinephoria-frontend-ci
     depends_on:
       backend:
