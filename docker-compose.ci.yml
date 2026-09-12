@@ -10,7 +10,7 @@
 
 services:
   postgres:
-    image: postgres:15
+    image: postgres:17
     container_name: cinephoria-postgres-ci
     environment:
       POSTGRES_DB: cinephoria_ci

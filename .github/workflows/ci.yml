@@ -57,14 +57,9 @@ jobs:
 
       - name: Vérifier les healthchecks Docker
         run: |
-          docker inspect cinephoria-backend-ci --format='{{.State.Health.Status}}'
-          docker inspect cinephoria-frontend-ci --format='{{.State.Health.Status}}'
-          docker inspect cinephoria-postgres-ci --format='{{.State.Health.Status}}'
-
-      - name: Derniers logs Docker
-        if: always()
-        working-directory: cinephoria-orchestration
-        run: docker compose -f docker-compose.ci.yml logs --tail=50
+          test "$(docker inspect -f '{{.State.Health.Status}}' cinephoria-backend-ci)" = "healthy"
+          test "$(docker inspect -f '{{.State.Health.Status}}' cinephoria-frontend-ci)" = "healthy"
+          test "$(docker inspect -f '{{.State.Health.Status}}' cinephoria-postgres-ci)" = "healthy"
 
       - name: Seed des donnees de test dans le conteneur backend
         working-directory: cinephoria-orchestration
@@ -73,6 +68,12 @@ jobs:
       - name: Installer les dependances Cypress
         working-directory: cinephoria-frontend
         run: npm ci
+
+      - name: Vérifier l'URL API dans le bundle frontend buildé
+        working-directory: cinephoria-orchestration
+        run: |
+          docker compose -f docker-compose.ci.yml exec -T frontend sh -c "grep -o 'localhost:3000' /usr/share/nginx/html/*.js | head -5 || echo 'localhost:3000 non trouvé dans le bundle'"
+          docker compose -f docker-compose.ci.yml exec -T frontend sh -c "grep -o 'onrender.com' /usr/share/nginx/html/*.js | head -5 || echo 'onrender.com non trouvé dans le bundle'"
 
       - name: Lancer les tests d'integration Cypress (securite + API + contraintes DB) contre l'environnement integre
         working-directory: cinephoria-frontend
