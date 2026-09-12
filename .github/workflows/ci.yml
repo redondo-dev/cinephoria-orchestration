@@ -57,14 +57,9 @@ jobs:
 
       - name: Vérifier les healthchecks Docker
         run: |
-          docker inspect cinephoria-backend-ci --format='{{.State.Health.Status}}'
-          docker inspect cinephoria-frontend-ci --format='{{.State.Health.Status}}'
-          docker inspect cinephoria-postgres-ci --format='{{.State.Health.Status}}'
-
-      - name: Derniers logs Docker
-        if: always()
-        working-directory: cinephoria-orchestration
-        run: docker compose -f docker-compose.ci.yml logs --tail=50
+          test "$(docker inspect -f '{{.State.Health.Status}}' cinephoria-backend-ci)" = "healthy"
+          test "$(docker inspect -f '{{.State.Health.Status}}' cinephoria-frontend-ci)" = "healthy"
+          test "$(docker inspect -f '{{.State.Health.Status}}' cinephoria-postgres-ci)" = "healthy"
 
       - name: Seed des donnees de test dans le conteneur backend
         working-directory: cinephoria-orchestration
