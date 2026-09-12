@@ -75,6 +75,7 @@ jobs:
         run: npm ci
 
       - name: Vérifier l'URL API dans le bundle frontend buildé
+        working-directory: cinephoria-orchestration
         run: |
           docker compose -f docker-compose.ci.yml exec -T frontend sh -c "grep -o 'localhost:3000' /usr/share/nginx/html/*.js | head -5 || echo 'localhost:3000 non trouvé dans le bundle'"
           docker compose -f docker-compose.ci.yml exec -T frontend sh -c "grep -o 'onrender.com' /usr/share/nginx/html/*.js | head -5 || echo 'onrender.com non trouvé dans le bundle'"
