@@ -74,6 +74,11 @@ jobs:
         working-directory: cinephoria-frontend
         run: npm ci
 
+      - name: Vérifier l'URL API dans le bundle frontend buildé
+        run: |
+          docker compose -f docker-compose.ci.yml exec -T frontend sh -c "grep -o 'localhost:3000' /usr/share/nginx/html/*.js | head -5 || echo 'localhost:3000 non trouvé dans le bundle'"
+          docker compose -f docker-compose.ci.yml exec -T frontend sh -c "grep -o 'onrender.com' /usr/share/nginx/html/*.js | head -5 || echo 'onrender.com non trouvé dans le bundle'"
+
       - name: Lancer les tests d'integration Cypress (securite + API + contraintes DB) contre l'environnement integre
         working-directory: cinephoria-frontend
         run: npx cypress run --env NODE_ENV=development --config baseUrl=http://localhost:8080 --spec "cypress/e2e/securite/**/*.cy.ts,cypress/e2e/api/auth.cy.ts,cypress/e2e/api/film.cy.ts,cypress/e2e/api/reservations.cy.ts,cypress/e2e/api/db.constraints.cy.ts,cypress/e2e/parcours/reservation.e2e.cy.ts,cypress/e2e/parcours/reservation-creation-api.e2e.cy.ts"
